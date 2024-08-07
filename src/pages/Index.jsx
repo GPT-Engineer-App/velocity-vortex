@@ -1,20 +1,23 @@
 import { useState, useEffect, useRef } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Cat, Heart, Info, ArrowRight, Paw } from "lucide-react";
+import { Cat, Heart, Info, ArrowRight, Paw, Star } from "lucide-react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import { useToast } from "@/components/ui/use-toast";
 
 const Index = () => {
   const [likes, setLikes] = useState(0);
   const [factOfTheDay, setFactOfTheDay] = useState("");
   const [adoptionIndex, setAdoptionIndex] = useState(0);
+  const [showConfetti, setShowConfetti] = useState(false);
   const headerRef = useRef(null);
   const { scrollY } = useScroll();
   const y = useTransform(scrollY, [0, 300], [0, 150]);
+  const { toast } = useToast();
 
   const catFacts = [
     "Cats have been domesticated for over 4,000 years.",
@@ -67,19 +70,58 @@ const Index = () => {
       <motion.div 
         ref={headerRef}
         style={{ y }}
-        className="h-[50vh] flex items-center justify-center bg-cover bg-center"
+        className="h-[50vh] flex items-center justify-center bg-cover bg-center relative overflow-hidden"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1 }}
       >
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-r from-purple-500/30 to-pink-500/30"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.5 }}
+        />
         <motion.h1 
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.5 }}
-          className="text-7xl font-bold text-center text-white drop-shadow-lg"
+          className="text-7xl font-bold text-center text-white drop-shadow-lg relative z-10"
         >
           Purrfect Cat Paradise
         </motion.h1>
+        <AnimatePresence>
+          {showConfetti && (
+            <motion.div
+              className="absolute inset-0"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              {[...Array(50)].map((_, index) => (
+                <motion.div
+                  key={index}
+                  className="absolute text-2xl"
+                  initial={{
+                    top: "0%",
+                    left: `${Math.random() * 100}%`,
+                    opacity: 1,
+                  }}
+                  animate={{
+                    top: "100%",
+                    opacity: 0,
+                  }}
+                  transition={{
+                    duration: 2 + Math.random() * 2,
+                    repeat: Infinity,
+                    repeatType: "loop",
+                  }}
+                >
+                  🎉
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
       
       <div className="max-w-6xl mx-auto p-8">
@@ -123,17 +165,40 @@ const Index = () => {
             <Button onClick={() => setAdoptionIndex((prev) => (prev - 1 + catsForAdoption.length) % catsForAdoption.length)}>
               Previous
             </Button>
-            <Card className="w-64">
-              <CardContent className="p-4">
-                <img 
-                  src={catsForAdoption[adoptionIndex].image} 
-                  alt={catsForAdoption[adoptionIndex].name} 
-                  className="w-full h-48 object-cover rounded-lg mb-4"
-                />
-                <h3 className="text-xl font-bold mb-2">{catsForAdoption[adoptionIndex].name}</h3>
-                <p>Age: {catsForAdoption[adoptionIndex].age} years</p>
-              </CardContent>
-            </Card>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={adoptionIndex}
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card className="w-64 transform hover:scale-105 transition-transform duration-300">
+                  <CardContent className="p-4">
+                    <img 
+                      src={catsForAdoption[adoptionIndex].image} 
+                      alt={catsForAdoption[adoptionIndex].name} 
+                      className="w-full h-48 object-cover rounded-lg mb-4"
+                    />
+                    <h3 className="text-xl font-bold mb-2">{catsForAdoption[adoptionIndex].name}</h3>
+                    <p>Age: {catsForAdoption[adoptionIndex].age} years</p>
+                    <Button 
+                      className="mt-4 w-full"
+                      onClick={() => {
+                        toast({
+                          title: "Adoption Request Sent!",
+                          description: `Thank you for your interest in adopting ${catsForAdoption[adoptionIndex].name}!`,
+                        });
+                        setShowConfetti(true);
+                        setTimeout(() => setShowConfetti(false), 3000);
+                      }}
+                    >
+                      Adopt Me!
+                    </Button>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </AnimatePresence>
             <Button onClick={() => setAdoptionIndex((prev) => (prev + 1) % catsForAdoption.length)}>
               Next
             </Button>
@@ -207,7 +272,13 @@ const Index = () => {
                 className="text-center relative"
               >
                 <Button 
-                  onClick={() => setLikes(likes + 1)}
+                  onClick={() => {
+                    setLikes(likes + 1);
+                    toast({
+                      title: "Thanks for the love!",
+                      description: "You're paw-some!",
+                    });
+                  }}
                   className="bg-pink-500 hover:bg-pink-600 transition-all duration-300 transform hover:scale-105 z-10 relative"
                 >
                   <Heart className="mr-2 h-4 w-4" /> Show Some Love
@@ -220,10 +291,33 @@ const Index = () => {
                 >
                   <Paw className="text-pink-300 h-40 w-40 opacity-10" />
                 </motion.div>
-                <p className="mt-4 text-3xl font-bold text-purple-800 relative z-10">
+                <motion.p 
+                  key={likes}
+                  initial={{ scale: 1.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 15 }}
+                  className="mt-4 text-3xl font-bold text-purple-800 relative z-10"
+                >
                   {likes} cat lovers so far!
-                </p>
+                </motion.p>
                 <p className="mt-2 text-gray-600 relative z-10">Join our community of cat enthusiasts!</p>
+                <motion.div
+                  className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  {[...Array(5)].map((_, index) => (
+                    <Star
+                      key={index}
+                      className={`inline-block h-6 w-6 ${
+                        index < Math.min(5, Math.floor(likes / 20))
+                          ? "text-yellow-400"
+                          : "text-gray-300"
+                      }`}
+                    />
+                  ))}
+                </motion.div>
               </motion.div>
             </CardContent>
           </Card>
