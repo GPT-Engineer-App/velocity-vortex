@@ -3,17 +3,22 @@ import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Cat, Heart, Info, ArrowRight, Paw, Star } from "lucide-react";
+import { Cat, Heart, Info, ArrowRight, Paw, Star, Gift, Camera } from "lucide-react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { useToast } from "@/components/ui/use-toast";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const Index = () => {
   const [likes, setLikes] = useState(0);
   const [factOfTheDay, setFactOfTheDay] = useState("");
   const [adoptionIndex, setAdoptionIndex] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [catName, setCatName] = useState("");
+  const [catPhoto, setCatPhoto] = useState(null);
   const headerRef = useRef(null);
   const { scrollY } = useScroll();
   const y = useTransform(scrollY, [0, 300], [0, 150]);
@@ -63,6 +68,34 @@ const Index = () => {
     slidesToScroll: 1,
     autoplay: true,
     autoplaySpeed: 3000,
+  };
+
+  const handlePhotoUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCatPhoto(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCatNameSubmit = () => {
+    if (catName && catPhoto) {
+      toast({
+        title: "Cat Added!",
+        description: `${catName} has been added to our cat community!`,
+      });
+      setCatName("");
+      setCatPhoto(null);
+    } else {
+      toast({
+        title: "Oops!",
+        description: "Please provide both a name and a photo for your cat.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -327,13 +360,65 @@ const Index = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
-          className="text-center"
+          className="text-center space-y-4"
         >
           <Button 
             className="bg-purple-600 hover:bg-purple-700 transition-all duration-300 transform hover:scale-105 text-lg px-6 py-3"
           >
             Explore More <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
+
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="bg-pink-500 hover:bg-pink-600 transition-all duration-300 transform hover:scale-105 text-lg px-6 py-3">
+                Add Your Cat <Gift className="ml-2 h-5 w-5" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Add Your Cat</DialogTitle>
+                <DialogDescription>
+                  Share your furry friend with our cat-loving community!
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="name" className="text-right">
+                    Name
+                  </Label>
+                  <Input
+                    id="name"
+                    value={catName}
+                    onChange={(e) => setCatName(e.target.value)}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="photo" className="text-right">
+                    Photo
+                  </Label>
+                  <div className="col-span-3">
+                    <Input
+                      id="photo"
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                    />
+                    {catPhoto && (
+                      <img
+                        src={catPhoto}
+                        alt="Uploaded cat"
+                        className="mt-2 w-full h-40 object-cover rounded-md"
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+              <Button onClick={handleCatNameSubmit} className="w-full">
+                Add Cat <Camera className="ml-2 h-4 w-4" />
+              </Button>
+            </DialogContent>
+          </Dialog>
         </motion.div>
       </div>
     </div>
